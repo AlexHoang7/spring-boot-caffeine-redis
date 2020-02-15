@@ -2,15 +2,17 @@ package com.example.caffeine.configuration;
 
 import com.example.caffeine.cache.UnifiedCacheManager;
 import com.example.caffeine.cache.settings.CaffeineCacheSetting;
+import com.example.caffeine.constant.CaffeineCacheEnum;
 import com.example.caffeine.service.IRedisService;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.cache.CacheProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import org.springframework.util.StringUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,6 +25,9 @@ import java.util.Map;
 @Configuration
 @EnableConfigurationProperties(CacheProperties.class)
 public class CacheConfiguration {
+
+    @Value("${caffeine.cache.property}")
+    private String caffeineCacheProperty;
 
     @Autowired
     private CacheProperties cacheProperties;
@@ -37,18 +42,26 @@ public class CacheConfiguration {
 
     /**
      * 设置一级缓存相关配置
-     * 按类型添加 用户、订单、预约单、购买人、使用人等
      *
      * @param unifiedCacheManager 统一缓存管理器
      */
     private void setCaffeineCacheSetting(final UnifiedCacheManager unifiedCacheManager) {
         String spec = cacheProperties.getCaffeine().getSpec();
-        if (StringUtils.hasText(spec)) {
+        if (!StringUtils.isBlank(spec)) {
             unifiedCacheManager.setCaffeineSpec(spec);
         }
 
         Map<String, CaffeineCacheSetting> caffeineCacheSettingMap = new HashMap<>(16);
-        caffeineCacheSettingMap.put("user", new CaffeineCacheSetting("initialCapacity=100,maximumSize=200,expireAfterWrite=60s"));
+        // 按类型添加 用户、订单、预约单、购买人、使用人等
+        caffeineCacheSettingMap.put(CaffeineCacheEnum.USER.value(), createCaffeineCacheSetting());
+        caffeineCacheSettingMap.put(CaffeineCacheEnum.ORDER.value(), createCaffeineCacheSetting());
+        caffeineCacheSettingMap.put(CaffeineCacheEnum.APPOINTMENT.value(), createCaffeineCacheSetting());
+        caffeineCacheSettingMap.put(CaffeineCacheEnum.PURCHASER.value(), createCaffeineCacheSetting());
+        caffeineCacheSettingMap.put(CaffeineCacheEnum.HOLDER.value(), createCaffeineCacheSetting());
         unifiedCacheManager.setCaffeineCacheSettingMap(caffeineCacheSettingMap);
+    }
+
+    private CaffeineCacheSetting createCaffeineCacheSetting() {
+        return new CaffeineCacheSetting(caffeineCacheProperty);
     }
 }

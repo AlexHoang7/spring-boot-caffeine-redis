@@ -3,16 +3,18 @@ package com.example.caffeine.cache;
 import com.example.caffeine.cache.listener.CaffeineRemovalListener;
 import com.example.caffeine.cache.settings.CaffeineCacheSetting;
 import com.example.caffeine.cache.settings.RedisCacheSetting;
+import com.example.caffeine.constant.ResponseEnum;
+import com.example.caffeine.exception.GlobalException;
 import com.example.caffeine.service.IRedisService;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.CaffeineSpec;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.lang.NonNull;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
-import org.springframework.util.StringUtils;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -130,7 +132,7 @@ public class UnifiedCacheManager implements CacheManager {
     private Caffeine<Object, Object> getCaffeine(final String name) {
         if (!CollectionUtils.isEmpty(caffeineCacheSettingMap)) {
             CaffeineCacheSetting caffeineCacheSetting = caffeineCacheSettingMap.get(name);
-            if (null != caffeineCacheSetting && StringUtils.isEmpty(caffeineCacheSetting.getSpec())) {
+            if (null != caffeineCacheSetting && !StringUtils.isBlank(caffeineCacheSetting.getSpec())) {
                 return Caffeine.from(CaffeineSpec.parse(caffeineCacheSetting.getSpec()));
             }
         }
@@ -138,12 +140,12 @@ public class UnifiedCacheManager implements CacheManager {
     }
 
     public void setCaffeineCacheSettingMap(Map<String, CaffeineCacheSetting> caffeineCacheSettingMap) {
-        this.caffeineCacheSettingMap = CollectionUtils.isEmpty(caffeineCacheSettingMap) ?
+        this.caffeineCacheSettingMap = !CollectionUtils.isEmpty(caffeineCacheSettingMap) ?
                 new ConcurrentHashMap<>(caffeineCacheSettingMap) : null;
     }
 
     public void setRedisCacheSettingMap(Map<String, RedisCacheSetting> redisCacheSettingMap) {
-        this.redisCacheSettingMap = CollectionUtils.isEmpty(redisCacheSettingMap) ?
+        this.redisCacheSettingMap = !CollectionUtils.isEmpty(redisCacheSettingMap) ?
                 new ConcurrentHashMap<>(redisCacheSettingMap) : null;
     }
 
@@ -171,6 +173,9 @@ public class UnifiedCacheManager implements CacheManager {
 
     @Override
     public Cache getCache(@NonNull String name) {
+        if (StringUtils.isBlank(name)) {
+            throw new GlobalException(ResponseEnum.RESPONSE_CODE_99.value(), "未指定查询一级缓存key");
+        }
         Cache cache = cacheConcurrentMap.get(name);
         if (null == cache && dynamicSwitch) {
             synchronized (cacheConcurrentMap) {
