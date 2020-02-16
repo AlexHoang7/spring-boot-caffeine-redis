@@ -56,25 +56,26 @@ public class UnifiedCacheManager implements CacheManager {
     /**
      * 是否动态创建缓存 默认为true
      */
-    private boolean dynamicSwitch = true;
+    private boolean dynamicSwitch;
 
     /**
      * 是否允许缓存值为null
      */
-    private boolean allowNullValues = true;
+    private boolean allowNullValues;
 
     private final IRedisService redisService;
 
-    public UnifiedCacheManager(IRedisService redisService) {
-        this(redisService, Collections.emptyList());
+    public UnifiedCacheManager(IRedisService redisService, boolean dynamicSwitch, boolean allowNullValues) {
+        this(redisService, Collections.emptyList(), dynamicSwitch, allowNullValues);
     }
 
-    public UnifiedCacheManager(IRedisService redisService, Collection<String> cacheNames) {
-        this(redisService, cacheNames, false);
-    }
+//    public UnifiedCacheManager(IRedisService redisService, Collection<String> cacheNames, boolean dynamicSwitch) {
+//        this(redisService, cacheNames, false);
+//    }
 
-    public UnifiedCacheManager(IRedisService redisService, Collection<String> cacheNames, boolean allowNullValues) {
+    public UnifiedCacheManager(IRedisService redisService, Collection<String> cacheNames, boolean dynamicSwitch, boolean allowNullValues) {
         this.redisService = redisService;
+        this.dynamicSwitch = dynamicSwitch;
         this.allowNullValues = allowNullValues;
 
         setCacheNames(cacheNames);

@@ -29,13 +29,19 @@ public class CacheConfiguration {
     @Value("${caffeine.cache.property}")
     private String caffeineCacheProperty;
 
+    @Value("${caffeine.cache.dynamic.switch}")
+    private boolean caffeineCacheDynamicSwitch;
+
+    @Value("${caffeine.cache.allow.null.values}")
+    private boolean caffeineCacheAllowNullValues;
+
     @Autowired
     private CacheProperties cacheProperties;
 
     @Bean
     @Primary
     public CacheManager cacheManager(IRedisService redisService) {
-        UnifiedCacheManager unifiedCacheManager = new UnifiedCacheManager(redisService);
+        UnifiedCacheManager unifiedCacheManager = new UnifiedCacheManager(redisService, caffeineCacheDynamicSwitch, caffeineCacheAllowNullValues);
         setCaffeineCacheSetting(unifiedCacheManager);
         return unifiedCacheManager;
     }
