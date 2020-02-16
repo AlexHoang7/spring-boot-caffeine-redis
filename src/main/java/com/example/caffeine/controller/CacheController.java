@@ -1,16 +1,21 @@
 package com.example.caffeine.controller;
 
+import com.example.caffeine.bean.CacheBean;
 import com.example.caffeine.cache.UnifiedCache;
+import com.example.caffeine.cache.UnifiedCacheManager;
 import com.example.caffeine.domain.UserBean;
+import com.example.caffeine.service.ICacheService;
 import com.example.caffeine.service.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.cache.caffeine.CaffeineCache;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -22,14 +27,20 @@ import java.util.concurrent.TimeUnit;
 @RestController
 public class CacheController {
 
-    @Autowired
-    private CacheManager cacheManager;
+    @Value("${caffeine.cache.property}")
+    private String caffeineCacheProperty;
 
     @Autowired
     private IUserService userService;
 
     @Autowired
+    private UnifiedCacheManager cacheManager;
+
+    @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+
+    @Autowired
+    private ICacheService cacheService;
 
     @GetMapping("/redis")
     public UserBean redis(int id) {
@@ -72,5 +83,15 @@ public class CacheController {
     public Set<Object> selectAllKeys(String key) {
         UnifiedCache unifiedCache = (UnifiedCache) cacheManager.getCache(key);
         return unifiedCache.selectAllKeys();
+    }
+
+    @GetMapping("/properties")
+    public Map<String, String> properties() {
+        return UnifiedCacheManager.buildCacheProperties(caffeineCacheProperty);
+    }
+
+    @GetMapping("/queryAllCacheStatus")
+    public List<CacheBean> queryAllCacheStatus() {
+        return cacheService.queryAllCacheStatus();
     }
 }

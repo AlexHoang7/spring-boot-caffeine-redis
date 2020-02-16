@@ -5,11 +5,9 @@ import com.example.caffeine.cache.settings.CaffeineCacheSetting;
 import com.example.caffeine.constant.CaffeineCacheEnum;
 import com.example.caffeine.service.IRedisService;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.cache.CacheProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -29,21 +27,49 @@ public class CacheConfiguration {
     @Value("${caffeine.cache.property}")
     private String caffeineCacheProperty;
 
+    @Value("${caffeine.default.initial.capacity}")
+    private int caffeineDefaultInitialCapacity;
+
+    @Value("${caffeine.default.maximum.size}")
+    private int caffeineDefaultMaximumSize;
+
+    @Value("${caffeine.default.expire.duration}")
+    private int caffeineDefaultExpireDuration;
+
+    @Value("${caffeine.default.time.unit}")
+    private String caffeineDefaultTimeUnit;
+
     @Value("${caffeine.cache.dynamic.switch}")
     private boolean caffeineCacheDynamicSwitch;
 
     @Value("${caffeine.cache.allow.null.values}")
     private boolean caffeineCacheAllowNullValues;
 
-    @Autowired
-    private CacheProperties cacheProperties;
+    private final CacheProperties cacheProperties;
+
+    public CacheConfiguration(CacheProperties cacheProperties) {
+        this.cacheProperties = cacheProperties;
+    }
 
     @Bean
     @Primary
-    public CacheManager cacheManager(IRedisService redisService) {
+    public UnifiedCacheManager unifiedCacheManager(IRedisService redisService) {
         UnifiedCacheManager unifiedCacheManager = new UnifiedCacheManager(redisService, caffeineCacheDynamicSwitch, caffeineCacheAllowNullValues);
+        setCaffeineDefaultSetting(unifiedCacheManager);
         setCaffeineCacheSetting(unifiedCacheManager);
         return unifiedCacheManager;
+    }
+
+    /**
+     * 设置一级缓存默认配置
+     *
+     * @param unifiedCacheManager 统一缓存管理器
+     */
+    private void setCaffeineDefaultSetting(final UnifiedCacheManager unifiedCacheManager) {
+        unifiedCacheManager.setCaffeineDefaultInitialCapacity(caffeineDefaultInitialCapacity);
+        unifiedCacheManager.setCaffeineDefaultMaximumSize(caffeineDefaultMaximumSize);
+        unifiedCacheManager.setCaffeineDefaultExpireDuration(caffeineDefaultExpireDuration);
+        unifiedCacheManager.setCaffeineDefaultTimeUnit(caffeineDefaultTimeUnit);
     }
 
     /**

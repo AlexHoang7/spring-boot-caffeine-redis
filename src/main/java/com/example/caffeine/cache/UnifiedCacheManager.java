@@ -8,6 +8,8 @@ import com.example.caffeine.exception.GlobalException;
 import com.example.caffeine.service.IRedisService;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.CaffeineSpec;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.Cache;
@@ -16,12 +18,10 @@ import org.springframework.lang.NonNull;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 /**
  * 统一缓存管理
@@ -31,17 +31,36 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class UnifiedCacheManager implements CacheManager {
 
-    private static final long CAFFEINE_EXPIRE_AFTER_WRITE = 1L;
+//    private static final long CAFFEINE_EXPIRE_AFTER_WRITE = 1L;
+//
+//    private static final int CAFFEINE_INITIAL_CAPACITY = 100;
+//
+//    public static final int CAFFEINE_MAXIMUM_SIZE = 200;
 
-    private static final int CAFFEINE_INITIAL_CAPACITY = 100;
+    @Getter
+    @Setter
+    private int caffeineDefaultInitialCapacity;
 
-    public static final int CAFFEINE_MAXIMUM_SIZE = 200;
+    @Getter
+    @Setter
+    private int caffeineDefaultMaximumSize;
 
+    @Getter
+    @Setter
+    private int caffeineDefaultExpireDuration;
+
+    @Getter
+    @Setter
+    private String caffeineDefaultTimeUnit;
+
+    @Getter
+    private Date resetTime;
 
     /**
      * 存取缓存
      */
-    private final ConcurrentMap<String, Cache> cacheConcurrentMap = new ConcurrentHashMap<>(16);
+    @Getter
+    private final Map<String, Cache> cacheConcurrentMap = new ConcurrentHashMap<>(16);
 
     /**
      * 一级缓存配置
@@ -100,9 +119,9 @@ public class UnifiedCacheManager implements CacheManager {
      * 设置默认caffeine缓存对象
      */
     private Caffeine<Object, Object> caffeine = Caffeine.newBuilder()
-            .expireAfterWrite(CAFFEINE_EXPIRE_AFTER_WRITE, TimeUnit.HOURS)
-            .initialCapacity(CAFFEINE_INITIAL_CAPACITY)
-            .maximumSize(CAFFEINE_MAXIMUM_SIZE)
+            .expireAfterAccess(caffeineDefaultExpireDuration, TimeUnit.SECONDS)
+            .initialCapacity(caffeineDefaultInitialCapacity)
+            .maximumSize(caffeineDefaultMaximumSize)
             .removalListener(new CaffeineRemovalListener())
             .recordStats();
 
@@ -117,6 +136,12 @@ public class UnifiedCacheManager implements CacheManager {
                 redisService, createNativeCaffeineCache(name));
     }
 
+    /**
+     * 生成原始caffeine缓存
+     *
+     * @param name cacheName
+     * @return 原始caffeine缓存
+     */
     protected com.github.benmanes.caffeine.cache.Cache<Object, Object> createNativeCaffeineCache(final String name) {
         return getCaffeine(name)
                 .removalListener(new CaffeineRemovalListener())
@@ -184,6 +209,7 @@ public class UnifiedCacheManager implements CacheManager {
                 if (null == cache) {
                     cache = createCache(name);
                     cacheConcurrentMap.put(name, cache);
+                    resetTime = new Date();
                 }
             }
         }
@@ -194,5 +220,32 @@ public class UnifiedCacheManager implements CacheManager {
     @Override
     public Collection<String> getCacheNames() {
         return Collections.unmodifiableSet(cacheConcurrentMap.keySet());
+    }
+
+    /**
+     * 构建缓存配置
+     *
+     * @param spec 缓存配置表达式
+     * @return 缓存配置 map形式
+     */
+    public static Map<String, String> buildCacheProperties(final String spec) {
+        if (StringUtils.isBlank(spec)) {
+            throw new GlobalException(ResponseEnum.RESPONSE_CODE_99.value(), "未发现caffeine spec配置，请在properties配置文件中配置");
+        }
+        String[] specArr = spec.split(",");
+        Map<String, String> propertiesMap = new HashMap<>(16);
+        Stream.of(specArr).forEach(specStr -> buildSingleProperty(specStr, propertiesMap));
+        return propertiesMap;
+    }
+
+    /**
+     * 添加缓存配置
+     *
+     * @param specStr       单个缓存配置
+     * @param propertiesMap 缓存配置map
+     */
+    private static void buildSingleProperty(final String specStr, final Map<String, String> propertiesMap) {
+        String[] specArr = specStr.split("=");
+        propertiesMap.put(specArr[0], specArr[1]);
     }
 }
