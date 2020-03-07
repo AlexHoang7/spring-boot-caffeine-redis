@@ -48,8 +48,10 @@ public class CacheServiceImpl implements ICacheService {
 
     @Override
     public Cache<Object, Object> queryCacheName(String cacheName) {
-        UnifiedCache unifiedCache = (UnifiedCache) unifiedCacheManager.getCacheConcurrentMap().get(cacheName).getNativeCache();
+        UnifiedCache unifiedCache = (UnifiedCache) unifiedCacheManager.getCache(cacheName);
         return unifiedCache.getCaffeineCache().getNativeCache();
+//        // 得到项目自己配置的cache
+//        return unifiedCacheManager.createNativeCaffeineCache(cacheName);
     }
 
     @Override
@@ -85,5 +87,11 @@ public class CacheServiceImpl implements ICacheService {
             cacheBean.setResetTime(unifiedCacheManager.getResetTime());
         }
         return cacheBean;
+    }
+
+    @Override
+    public String queryRedisKey(String cacheName) {
+        
+        return null;
     }
 }

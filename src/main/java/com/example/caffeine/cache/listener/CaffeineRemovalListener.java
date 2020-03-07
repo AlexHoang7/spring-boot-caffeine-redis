@@ -8,6 +8,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+/**
+ * caffeine 移除监听
+ *
+ * @author Alex
+ */
 @Slf4j
 public class CaffeineRemovalListener implements RemovalListener<Object, Object> {
 

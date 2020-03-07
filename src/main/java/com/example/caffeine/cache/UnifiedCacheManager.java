@@ -142,7 +142,7 @@ public class UnifiedCacheManager implements CacheManager {
      * @param name cacheName
      * @return 原始caffeine缓存
      */
-    protected com.github.benmanes.caffeine.cache.Cache<Object, Object> createNativeCaffeineCache(final String name) {
+    public com.github.benmanes.caffeine.cache.Cache<Object, Object> createNativeCaffeineCache(final String name) {
         return getCaffeine(name)
                 .removalListener(new CaffeineRemovalListener())
                 .recordStats()
@@ -214,6 +214,13 @@ public class UnifiedCacheManager implements CacheManager {
             }
         }
         return cache;
+    }
+
+    /**
+     * TODO reset cache
+     */
+    public void resetCache() {
+
     }
 
     @NonNull

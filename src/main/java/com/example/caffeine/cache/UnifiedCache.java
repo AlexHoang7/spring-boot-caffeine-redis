@@ -101,8 +101,8 @@ public class UnifiedCache extends AbstractValueAdaptingCache {
 
     @Override
     public ValueWrapper get(@NonNull Object key) {
-        ValueWrapper valueWrapper = null;
         try {
+            ValueWrapper valueWrapper = null;
             if (caffeineCacheSwitch) {
                 valueWrapper = caffeineCache.get(key);
                 log.info("get方法----key=[{}]查询一级缓存值为=[{}]", key, JsonUtil.toJson(valueWrapper));
@@ -111,10 +111,11 @@ public class UnifiedCache extends AbstractValueAdaptingCache {
                 valueWrapper = redisService.getCacheValueWrapper(key);
                 log.info("get方法----key=[{}]查询二级缓存值为=[{}]", key, JsonUtil.toJson(valueWrapper));
             }
+            return valueWrapper;
         } catch (JsonProcessingException e) {
             log.error("json转换异常");
         }
-        return valueWrapper;
+        return super.get(key);
     }
 
     @Override
@@ -138,6 +139,7 @@ public class UnifiedCache extends AbstractValueAdaptingCache {
         if (caffeineCacheSwitch) {
             caffeineCache.put(key, value);
         }
+        // 注意redis不能直接set值
         redisService.setObject((String) key, value, DEFAULT_REDIS_EXPIRE_TIME, TimeUnit.SECONDS);
     }
 
@@ -153,17 +155,21 @@ public class UnifiedCache extends AbstractValueAdaptingCache {
         redisService.delete((String) key);
         if (caffeineCacheSwitch) {
             // redis订阅通知其他节点删除
+            caffeineCache.evict(key);
         }
     }
 
     @Override
     public void clear() {
 //        慎用 redis clear *
+        // 先清除二级缓存
+        caffeineCache.clear();
     }
 
     @Override
     public boolean invalidate() {
-        return false;
+        // 需先清除二级缓存
+        return caffeineCache.invalidate();
     }
 
     /**

@@ -42,4 +42,12 @@ public interface ICacheService {
      * @return 缓存bean
      */
     CacheBean queryCacheStatus(final String cacheName);
+
+    /**
+     * 查询redis key名称
+     *
+     * @param cacheName 一级缓存名称
+     * @return redis key名称
+     */
+    String queryRedisKey(final String cacheName);
 }
